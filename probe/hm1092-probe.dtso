@@ -1,0 +1,117 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Dell Latitude 7455: read-only presence test for the HM1092 IR sensor.
+ * Wiring from Dell's Windows resource file CAMI_RES_QRD.bin:
+ *   power enable  GPIO 90 (high = on)
+ *   reset         GPIO 109 (active low)
+ *   clock         CAM_CC_MCLK0 at 24 MHz, out on GPIO 96 (cam_mclk)
+ *   I2C address   0x24 (0x48 8-bit, from SCFG_AUX_QRD.bin)
+ * The bus is unknown, so a test node sits on all four camera I2C buses.
+ * Supplies other than GPIO 90 are guesses taken from the colour camera.
+ */
+/dts-v1/;
+/plugin/;
+
+&{/} {
+	vreg_ir_en: regulator-ir-cam-en {
+		compatible = "regulator-fixed";
+		regulator-name = "VREG_IR_CAM_EN";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		/* tlmm 90, GPIO_ACTIVE_HIGH */
+		gpio = <&tlmm 90 0>;
+		enable-active-high;
+		startup-delay-us = <1000>;
+		pinctrl-names = "default";
+		/* The pins stay set while the regulator exists, whichever node probes. */
+		pinctrl-0 = <&ir_cam_en_default>, <&ir_cam_default>;
+	};
+};
+
+&tlmm {
+	ir_cam_en_default: ir-cam-en-default-state {
+		pins = "gpio90";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-disable;
+	};
+
+	ir_cam_default: ir-cam-default-state {
+		mclk-pins {
+			pins = "gpio96";
+			function = "cam_mclk";
+			drive-strength = <16>;
+			bias-disable;
+		};
+
+		reset-n-pins {
+			pins = "gpio109";
+			function = "gpio";
+			drive-strength = <2>;
+			bias-disable;
+		};
+	};
+};
+
+&cci0 {
+	status = "okay";
+};
+
+&cci0_i2c0 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	ir-probe@24 {
+		compatible = "himax,hm1092-probe";
+		reg = <0x24>;
+		/* CAM_CC_MCLK0_CLK = 71 */
+		clocks = <&camcc 71>;
+		/* tlmm 109, GPIO_ACTIVE_LOW */
+		reset-gpios = <&tlmm 109 1>;
+		avdd-supply = <&vreg_l7b_2p8>;
+		dvdd-supply = <&vreg_ir_en>;
+		dovdd-supply = <&vreg_cam_1p8>;
+	};
+};
+
+&cci0_i2c1 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	ir-probe@24 {
+		compatible = "himax,hm1092-probe";
+		reg = <0x24>;
+		clocks = <&camcc 71>;
+		reset-gpios = <&tlmm 109 1>;
+		avdd-supply = <&vreg_l7b_2p8>;
+		dvdd-supply = <&vreg_ir_en>;
+		dovdd-supply = <&vreg_cam_1p8>;
+	};
+};
+
+&cci1_i2c0 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	ir-probe@24 {
+		compatible = "himax,hm1092-probe";
+		reg = <0x24>;
+		clocks = <&camcc 71>;
+		reset-gpios = <&tlmm 109 1>;
+		avdd-supply = <&vreg_l7b_2p8>;
+		dvdd-supply = <&vreg_ir_en>;
+		dovdd-supply = <&vreg_cam_1p8>;
+	};
+};
+
+&cci1_i2c1 {
+	ir-probe@24 {
+		compatible = "himax,hm1092-probe";
+		reg = <0x24>;
+		clocks = <&camcc 71>;
+		reset-gpios = <&tlmm 109 1>;
+		avdd-supply = <&vreg_l7b_2p8>;
+		dvdd-supply = <&vreg_ir_en>;
+		dovdd-supply = <&vreg_cam_1p8>;
+	};
+};

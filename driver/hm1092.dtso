@@ -1,0 +1,125 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Dell Latitude 7455: Himax HM1092 IR camera. Applied on top of the colour
+ * camera overlay (~/7455-camera/latitude-7455-camera.dtso).
+ *
+ * From Dell's Windows driver pack and the presence test (2026-11-22):
+ *   power enable  GPIO 90 (high = on)
+ *   reset         GPIO 109 (active low)
+ *   clock         CAM_CC_MCLK0 at 24 MHz, out on GPIO 96 (cam_mclk)
+ *   I2C           CCI0 bus 0, address 0x24 (answered, chip ID 0x1091)
+ *   CSI           CSIPHY0 (camss port@0), 1 data lane, 180 MHz link
+ * CSIPHY0 and one lane are inferences (MCLK0/CCI0 pairing, C1PG.bin lists
+ * PHYs 0 and 4 only, PLL 24/0x0c*0x5a = 180 MHz = 36 MHz * 10 bit / 2 / 1).
+ * Supplies other than GPIO 90 are copied from the colour camera.
+ *
+ * IR emitter: switched by PM8550 gpio9 (high = on), as Windows does through
+ * qcpmic (qccamflash8380.sys, IOCTL 0x80028fa8); the emitter regulates its
+ * own current. The driver lights it while streaming (led-names = "ir").
+ */
+/dts-v1/;
+/plugin/;
+
+&{/} {
+	vreg_ir_en: regulator-ir-cam-en {
+		compatible = "regulator-fixed";
+		regulator-name = "VREG_IR_CAM_EN";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		/* tlmm 90, GPIO_ACTIVE_HIGH */
+		gpio = <&tlmm 90 0>;
+		enable-active-high;
+		startup-delay-us = <1000>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&ir_cam_en_default>;
+	};
+};
+
+&{/leds} {
+	ir_emitter: led-ir-emitter {
+		label = "ir:emitter";
+		/* LED_COLOR_ID_IR */
+		color = <7>;
+		/* pm8550 gpio9, GPIO_ACTIVE_HIGH */
+		gpios = <&pm8550_gpios 9 0>;
+		default-state = "off";
+	};
+};
+
+&tlmm {
+	ir_cam_en_default: ir-cam-en-default-state {
+		pins = "gpio90";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-disable;
+	};
+
+	ir_cam_default: ir-cam-default-state {
+		mclk-pins {
+			pins = "gpio96";
+			function = "cam_mclk";
+			drive-strength = <16>;
+			bias-disable;
+		};
+
+		reset-n-pins {
+			pins = "gpio109";
+			function = "gpio";
+			drive-strength = <2>;
+			bias-disable;
+		};
+	};
+};
+
+&camss {
+	ports {
+		port@0 {
+			camss_csiphy0_ep: endpoint {
+				data-lanes = <0>;
+				remote-endpoint = <&hm1092_ep>;
+			};
+		};
+	};
+};
+
+&cci0 {
+	status = "okay";
+};
+
+&cci0_i2c0 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	camera@24 {
+		compatible = "himax,hm1092";
+		reg = <0x24>;
+
+		/* tlmm 109, GPIO_ACTIVE_LOW */
+		reset-gpios = <&tlmm 109 1>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&ir_cam_default>;
+
+		/* CAM_CC_MCLK0_CLK = 71 */
+		clocks = <&camcc 71>;
+		assigned-clocks = <&camcc 71>;
+		assigned-clock-rates = <24000000>;
+
+		/* MEDIA_ORIENTATION_FRONT */
+		orientation = <0>;
+
+		leds = <&ir_emitter>;
+		led-names = "ir";
+
+		avdd-supply = <&vreg_l7b_2p8>;
+		dvdd-supply = <&vreg_ir_en>;
+		dovdd-supply = <&vreg_cam_1p8>;
+
+		port {
+			hm1092_ep: endpoint {
+				data-lanes = <1>;
+				link-frequencies = /bits/ 64 <180000000>;
+				remote-endpoint = <&camss_csiphy0_ep>;
+			};
+		};
+	};
+};

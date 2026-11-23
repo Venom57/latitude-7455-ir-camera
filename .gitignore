@@ -1,0 +1,23 @@
+# Personal or not ours to publish
+captures/
+download/
+driverpack/
+acpi/
+dt/
+ref/
+notes-*.local.md
+
+# Build output
+*.o
+*.ko
+*.mod
+*.mod.c
+*.cmd
+*.order
+*.symvers
+*.dtbo
+.*.cmd
+.tmp_versions/
+relay/ir-relay
+__pycache__/
+*.pyc

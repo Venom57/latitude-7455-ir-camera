@@ -1,0 +1,62 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Dell Latitude 7455: find which PM8550 flash channel drives the IR emitter.
+ *
+ * Windows drives the emitter through the PMIC flash block (pm8550_flash at
+ * 0xee00) in flash (strobe) mode with IrLedCurrentMilliampere = 700
+ * (qccamflash_ext8380.inf; qccamflash8380.sys calls SetTargetCurrent(LED1=700)
+ * and arms a hardware strobe). The ASUS Zenbook A14 patch series (June 2026,
+ * "media/arm64: HM1092 IR camera ...") has the same sensor with its emitter on
+ * channel 4, strobed in flash mode; torch mode lit nothing here.
+ *
+ * Each channel becomes a flash-capable LED, ir:flash-1 .. ir:flash-4, with
+ * the flash current capped at 400 mA (Windows uses 700 mA) and the torch at
+ * 100 mA. The hardware safety timer ends every flash on its own.
+ */
+/dts-v1/;
+/plugin/;
+
+&pm8550_flash {
+	status = "okay";
+
+	led-0 {
+		/* LED_COLOR_ID_IR */
+		color = <7>;
+		function = "flash";
+		function-enumerator = <1>;
+		led-sources = <1>;
+		led-max-microamp = <100000>;
+		flash-max-microamp = <400000>;
+		flash-max-timeout-us = <1280000>;
+	};
+
+	led-1 {
+		color = <7>;
+		function = "flash";
+		function-enumerator = <2>;
+		led-sources = <2>;
+		led-max-microamp = <100000>;
+		flash-max-microamp = <400000>;
+		flash-max-timeout-us = <1280000>;
+	};
+
+	led-2 {
+		color = <7>;
+		function = "flash";
+		function-enumerator = <3>;
+		led-sources = <3>;
+		led-max-microamp = <100000>;
+		flash-max-microamp = <400000>;
+		flash-max-timeout-us = <1280000>;
+	};
+
+	led-3 {
+		color = <7>;
+		function = "flash";
+		function-enumerator = <4>;
+		led-sources = <4>;
+		led-max-microamp = <100000>;
+		flash-max-microamp = <400000>;
+		flash-max-timeout-us = <1280000>;
+	};
+};

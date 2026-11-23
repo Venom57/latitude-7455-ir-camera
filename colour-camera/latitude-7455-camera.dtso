@@ -1,0 +1,72 @@
+// Dell Latitude 7455: enable the front colour camera (OmniVision OV02E10).
+//
+// Wiring taken from Linaro's arm64-laptops tree (x1-dell-thena.dtsi, branch
+// arm64-laptops-v7.3-rc1-camss-v13), adapted to the in-tree CAMSS binding that
+// linux-omarchy 7.3 uses: the CSIPHY lives inside the camss node, and the
+// sensor connects straight to CAMSS port@3 (CSIPHY4).
+//
+// Build:  dtc -@ -I dts -O dtb -o latitude-7455-camera.dtbo latitude-7455-camera.dtso
+
+/dts-v1/;
+/plugin/;
+
+&camss {
+	vdd-csiphy-0p8-supply = <&vreg_l2c_0p8>;
+	vdd-csiphy-1p2-supply = <&vreg_l1c_1p2>;
+
+	status = "okay";
+
+	ports {
+		port@3 {
+			camss_csiphy4_ep: endpoint {
+				data-lanes = <0 1>;
+				remote-endpoint = <&ov02e10_ep>;
+			};
+		};
+	};
+};
+
+&cci1 {
+	status = "okay";
+};
+
+&cci1_i2c1 {
+	camera@10 {
+		compatible = "ovti,ov02e10";
+		reg = <0x10>;
+
+		/* tlmm 237, GPIO_ACTIVE_LOW */
+		reset-gpios = <&tlmm 237 1>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&cam_rgb_default>;
+
+		/* CAM_CC_MCLK4_CLK = 79 */
+		clocks = <&camcc 79>;
+		assigned-clocks = <&camcc 79>;
+		assigned-clock-rates = <19200000>;
+
+		/* MEDIA_ORIENTATION_FRONT */
+		orientation = <0>;
+
+		avdd-supply = <&vreg_l7b_2p8>;
+		dvdd-supply = <&vreg_l7b_2p8>;
+		dovdd-supply = <&vreg_cam_1p8>;
+
+		/* Light the camera indicator while the sensor is streaming. */
+		leds = <&camera_indicator>;
+		led-names = "privacy";
+
+		port {
+			ov02e10_ep: endpoint {
+				data-lanes = <1 2>;
+				link-frequencies = /bits/ 64 <360000000>;
+				remote-endpoint = <&camss_csiphy4_ep>;
+			};
+		};
+	};
+};
+
+&{/leds} {
+	camera_indicator: led-camera-indicator {
+	};
+};

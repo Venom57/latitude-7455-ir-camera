@@ -1,0 +1,21 @@
+[Unit]
+Description=IR camera relay (HM1092 IR camera -> /dev/video43 "IR Camera")
+Documentation=https://github.com/Venom57/latitude-7455-ir-camera
+After=systemd-modules-load.service systemd-udev-settle.service
+
+[Service]
+ExecStart=/usr/lib/ir-relay/ir-relay /dev/video43 /usr/lib/ir-relay/ir-relay-setup.sh
+Restart=always
+RestartSec=3
+DynamicUser=yes
+SupplementaryGroups=video
+DevicePolicy=closed
+DeviceAllow=char-video4linux rw
+DeviceAllow=char-media rw
+ProtectHome=yes
+ProtectSystem=strict
+PrivateNetwork=yes
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=multi-user.target
