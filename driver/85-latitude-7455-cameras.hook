@@ -1,0 +1,13 @@
+# Re-apply the Latitude 7455 camera overlays when a kernel update replaces the
+# device tree. Runs after 70-dkms-* (which rebuilds hm1092) and before
+# 90-mkinitcpio-install (which builds the boot image from the device tree).
+[Trigger]
+Type = Path
+Operation = Install
+Operation = Upgrade
+Target = boot/dtbs/linux-omarchy/qcom/x1e80100-dell-latitude-7455.dtb
+
+[Action]
+Description = Re-applying the Latitude 7455 camera overlays...
+When = PostTransaction
+Exec = /usr/local/lib/latitude-7455-cameras/reapply

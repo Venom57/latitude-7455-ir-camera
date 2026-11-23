@@ -16,18 +16,19 @@ Tested on Omarchy (Arch Linux ARM), kernel `linux-omarchy 7.3.0-75`. Discussion 
 ## Requirements
 
 1. The colour-camera overlay from `colour-camera/`, installed first: copy the folder to `~/7455-camera`, build the overlay (`dtc -@ -I dts -O dtb -o latitude-7455-camera.dtbo latitude-7455-camera.dtso`) and run `sudo bash ~/7455-camera/install-camera.sh`. It keeps the stock device tree as `/boot/dtbs/linux-omarchy/qcom/x1e80100-dell-latitude-7455.dtb.stock`, which the IR scripts build on.
-2. `linux-omarchy-headers` (or the headers for your kernel), `dtc`, `v4l-utils` (`media-ctl`, `v4l2-ctl`), and for the relay `v4l2loopback-dkms`.
+2. `linux-omarchy-headers` (or the headers for your kernel), `dkms`, `dtc`, `v4l-utils` (`media-ctl`, `v4l2-ctl`), and for the relay `v4l2loopback-dkms`.
 
 ## Install
 
 ```
-make -C driver
-bash driver/install.sh      # module to /usr/lib/modules/$(uname -r)/updates + overlay + boot image
-bash relay/install.sh       # /dev/video43 "IR Camera" + ir-relay.service
+bash driver/install.sh      # driver via DKMS + colour/IR overlays + pacman hook + boot image
+bash relay/install.sh       # /dev/video43 "IR Camera" + ir-relay.service (needs v4l2loopback-dkms)
 # reboot
 ```
 
-`bash driver/install.sh --undo` and `bash relay/install.sh --undo` revert. The module is built for one kernel: after a kernel update run `make -C driver clean all && bash driver/install.sh` before rebooting. CAMSS registers its cameras only when every sensor in the device tree has bound, so if `hm1092` is missing the colour camera disappears too.
+Kernel updates are handled automatically: DKMS rebuilds `hm1092` for the new kernel, and the pacman hook `85-latitude-7455-cameras.hook` re-applies both overlays (`/usr/local/lib/latitude-7455-cameras/reapply`) when the kernel package replaces the device tree, before `90-mkinitcpio-install` builds the boot image. Without that, an update installs the stock device tree and both cameras disappear (this happened going from 7.3-75 to 7.3-78). Running `bash driver/install.sh` again repairs an installation either way.
+
+`bash driver/install.sh --undo` and `bash relay/install.sh --undo` revert. CAMSS registers its cameras only when every sensor in the device tree has bound, so if `hm1092` is missing the colour camera disappears too.
 
 Module parameter `emitter_mode`: 0 off, 1 on while streaming, 2 pulsed (default).
 
