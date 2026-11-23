@@ -30,7 +30,7 @@ install -D -m 644 "$here/ir-relay.service" /etc/systemd/system/ir-relay.service
 cat >"$conf" <<'CONF'
 # Virtual webcams for the Latitude 7455: the colour camera (fed by the user's
 # camera-relay service) and the IR camera (fed by ir-relay.service on demand).
-options v4l2loopback devices=2 video_nr=42,43 card_label="Built-in Camera","IR Camera" exclusive_caps=1,1 max_buffers=4
+options v4l2loopback devices=2 video_nr=42,43 card_label="Built-in Camera,IR Camera" exclusive_caps=1,1 max_buffers=4
 CONF
 
 systemctl daemon-reload
